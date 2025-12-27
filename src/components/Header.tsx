@@ -19,12 +19,12 @@ export function Header({ onUploadClick }: HeaderProps) {
           </Link>
 
           <nav className="hidden md:flex items-center gap-8">
-            <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <Link to="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
               Browse
-            </a>
-            <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            </Link>
+            <Link to="/courses" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
               Courses
-            </a>
+            </Link>
             <Link to="/dashboard" className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5">
               <BarChart3 className="h-4 w-4" />
               Analytics
