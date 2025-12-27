@@ -65,7 +65,19 @@ export const useDocuments = () => {
 };
 
 export const useAnalytics = (timeRange: TimeRange = 'month') => {
-  const [analytics, setAnalytics] = useState<Analytics | null>(null);
+  const [analytics, setAnalytics] = useState<Analytics>({
+    totalDocuments: 0,
+    totalDownloads: 0,
+    uniqueCourses: 0,
+    uniqueProfessors: 0,
+    uploadsOverTime: [],
+    courseDistribution: [],
+    documentTypes: [],
+    topProfessors: [],
+    downloadTrends: [],
+    recentActivity: [],
+    timeRange,
+  });
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
