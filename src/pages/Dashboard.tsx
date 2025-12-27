@@ -152,8 +152,8 @@ const Dashboard = () => {
                   <AreaChart data={analytics.uploadsOverTime}>
                     <defs>
                       <linearGradient id="uploadGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(211, 100%, 50%)" stopOpacity={0.2}/>
-                        <stop offset="95%" stopColor="hsl(211, 100%, 50%)" stopOpacity={0}/>
+                        <stop offset="5%" stopColor="hsl(270, 65%, 45%)" stopOpacity={0.2}/>
+                        <stop offset="95%" stopColor="hsl(270, 65%, 45%)" stopOpacity={0}/>
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -179,9 +179,9 @@ const Dashboard = () => {
                     <Area 
                       type="monotone" 
                       dataKey="uploads" 
-                      stroke="hsl(211, 100%, 50%)" 
+                      stroke="hsl(270, 65%, 45%)" 
                       strokeWidth={2}
-                      fill="url(#uploadGradient)" 
+                      fill="url(#uploadGradient)"
                     />
                   </AreaChart>
                 </ResponsiveContainer>
@@ -231,7 +231,7 @@ const Dashboard = () => {
                     />
                     <Bar 
                       dataKey="downloads" 
-                      fill="hsl(211, 100%, 50%)" 
+                      fill="hsl(270, 65%, 45%)" 
                       radius={[6, 6, 0, 0]}
                     />
                   </BarChart>
@@ -257,11 +257,11 @@ const Dashboard = () => {
               {analytics.courseDistribution.length > 0 ? (
                 analytics.courseDistribution.map((course, index) => {
                   const colors = [
-                    "hsl(211, 100%, 50%)",
-                    "hsl(172, 66%, 50%)",
-                    "hsl(262, 83%, 58%)",
-                    "hsl(25, 95%, 53%)",
-                    "hsl(340, 82%, 52%)",
+                    "hsl(270, 65%, 45%)",
+                    "hsl(280, 70%, 50%)",
+                    "hsl(260, 60%, 55%)",
+                    "hsl(290, 55%, 50%)",
+                    "hsl(250, 65%, 50%)",
                   ];
                   const color = colors[index % colors.length];
                   return (
