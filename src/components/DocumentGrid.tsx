@@ -1,12 +1,14 @@
-import { DocumentCard, Document } from "./DocumentCard";
+import { DocumentCard } from "./DocumentCard";
+import { Document } from "@/lib/database";
 import { FileX } from "lucide-react";
 
 interface DocumentGridProps {
   documents: Document[];
   searchQuery: string;
+  onDownload?: (documentId: string) => void;
 }
 
-export function DocumentGrid({ documents, searchQuery }: DocumentGridProps) {
+export function DocumentGrid({ documents, searchQuery, onDownload }: DocumentGridProps) {
   const filteredDocuments = documents.filter((doc) => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
@@ -39,7 +41,7 @@ export function DocumentGrid({ documents, searchQuery }: DocumentGridProps) {
                 className="animate-slide-up"
                 style={{ animationDelay: `${index * 0.05}s` }}
               >
-                <DocumentCard document={doc} />
+                <DocumentCard document={doc} onDownload={onDownload} />
               </div>
             ))}
           </div>
