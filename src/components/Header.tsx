@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { BookOpen, Upload, BarChart3 } from "lucide-react";
+import { GraduationCap, Upload, BarChart3 } from "lucide-react";
 import { Button } from "./ui/button";
 
 interface HeaderProps {
@@ -13,9 +13,12 @@ export function Header({ onUploadClick }: HeaderProps) {
         <div className="flex h-16 items-center justify-between">
           <Link to="/" className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary">
-              <BookOpen className="h-5 w-5 text-primary-foreground" />
+              <GraduationCap className="h-5 w-5 text-primary-foreground" />
             </div>
-            <span className="text-lg font-semibold tracking-tight">StudyHub</span>
+            <div className="flex flex-col">
+              <span className="text-lg font-semibold tracking-tight leading-tight">ΔΤΔ</span>
+              <span className="text-[10px] text-muted-foreground leading-tight">Academic Database</span>
+            </div>
           </Link>
 
           <nav className="hidden md:flex items-center gap-8">

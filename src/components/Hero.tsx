@@ -21,12 +21,12 @@ export function Hero({ searchQuery, onSearchChange }: HeroProps) {
       <div className="container mx-auto px-6">
         <div className="max-w-3xl mx-auto text-center">
           <h1 className="text-5xl md:text-6xl font-semibold tracking-tight text-balance animate-in">
-            Your academic success,{" "}
-            <span className="text-primary">organized.</span>
+            Delta Tau Delta{" "}
+            <span className="text-primary">Academic Database</span>
           </h1>
           
           <p className="mt-6 text-lg text-muted-foreground max-w-xl mx-auto animate-in-delayed">
-            Access course materials, study guides, and notes shared by students. 
+            Access course materials, study guides, and notes shared by brothers. 
             Search by course code or professor name.
           </p>
 
