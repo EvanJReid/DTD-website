@@ -1,18 +1,10 @@
 import { FileText, FileSpreadsheet, FileCode, Presentation, Download, Calendar, User } from "lucide-react";
 import { Button } from "./ui/button";
-
-export interface Document {
-  id: string;
-  title: string;
-  course: string;
-  professor: string;
-  fileType: string;
-  uploadDate: string;
-  downloads: number;
-}
+import { Document } from "@/lib/database";
 
 interface DocumentCardProps {
   document: Document;
+  onDownload?: (documentId: string) => void;
 }
 
 const fileTypeIcons: Record<string, React.ReactNode> = {
@@ -21,7 +13,7 @@ const fileTypeIcons: Record<string, React.ReactNode> = {
   python: <FileCode className="h-6 w-6" />,
   java: <FileCode className="h-6 w-6" />,
   powerpoint: <Presentation className="h-6 w-6" />,
-  default: <FileText className="h-6 w-6" />,
+  other: <FileText className="h-6 w-6" />,
 };
 
 const fileTypeColors: Record<string, string> = {
@@ -30,12 +22,25 @@ const fileTypeColors: Record<string, string> = {
   python: "bg-yellow-50 text-yellow-600",
   java: "bg-orange-50 text-orange-600",
   powerpoint: "bg-amber-50 text-amber-600",
-  default: "bg-muted text-muted-foreground",
+  other: "bg-muted text-muted-foreground",
 };
 
-export function DocumentCard({ document }: DocumentCardProps) {
-  const icon = fileTypeIcons[document.fileType] || fileTypeIcons.default;
-  const colorClass = fileTypeColors[document.fileType] || fileTypeColors.default;
+const formatDate = (isoString: string) => {
+  return new Date(isoString).toLocaleDateString('en-US', { 
+    month: 'short', 
+    day: 'numeric', 
+    year: 'numeric' 
+  });
+};
+
+export function DocumentCard({ document, onDownload }: DocumentCardProps) {
+  const icon = fileTypeIcons[document.fileType] || fileTypeIcons.other;
+  const colorClass = fileTypeColors[document.fileType] || fileTypeColors.other;
+
+  const handleDownload = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onDownload?.(document.id);
+  };
 
   return (
     <div className="group relative bg-card rounded-2xl border border-border p-6 hover-lift cursor-pointer">
@@ -64,7 +69,7 @@ export function DocumentCard({ document }: DocumentCardProps) {
           <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-1">
               <Calendar className="h-3.5 w-3.5" />
-              {document.uploadDate}
+              {formatDate(document.uploadedAt)}
             </span>
             <span className="inline-flex items-center gap-1">
               <Download className="h-3.5 w-3.5" />
@@ -78,6 +83,7 @@ export function DocumentCard({ document }: DocumentCardProps) {
           variant="ghost" 
           size="icon" 
           className="opacity-0 group-hover:opacity-100 transition-opacity"
+          onClick={handleDownload}
         >
           <Download className="h-4 w-4" />
         </Button>

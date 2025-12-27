@@ -1,13 +1,16 @@
 import { FileText, Users, GraduationCap, TrendingUp } from "lucide-react";
-
-const stats = [
-  { icon: FileText, label: "Documents", value: "2,847" },
-  { icon: Users, label: "Contributors", value: "1,234" },
-  { icon: GraduationCap, label: "Courses", value: "156" },
-  { icon: TrendingUp, label: "Downloads", value: "45.2K" },
-];
+import { useAnalytics } from "@/hooks/useDatabase";
 
 export function Stats() {
+  const { analytics } = useAnalytics();
+
+  const stats = [
+    { icon: FileText, label: "Documents", value: analytics.totalDocuments.toLocaleString() },
+    { icon: Users, label: "Professors", value: analytics.uniqueProfessors.toLocaleString() },
+    { icon: GraduationCap, label: "Courses", value: analytics.uniqueCourses.toLocaleString() },
+    { icon: TrendingUp, label: "Downloads", value: analytics.totalDownloads.toLocaleString() },
+  ];
+
   return (
     <section className="py-12 border-y border-border bg-muted/30">
       <div className="container mx-auto px-6">
