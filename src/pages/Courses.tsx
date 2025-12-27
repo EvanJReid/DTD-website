@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, FileText, User, ChevronRight } from "lucide-react";
+import { ArrowLeft, FileText, User, ChevronRight, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useDocuments, useAnalytics } from "@/hooks/useDatabase";
 
 const Courses = () => {
+  const [searchQuery, setSearchQuery] = useState("");
   const { documents } = useDocuments();
   const { analytics } = useAnalytics();
 
@@ -30,6 +32,16 @@ const Courses = () => {
       professorList: Array.from(c.professors),
     }))
     .sort((a, b) => b.documents - a.documents);
+
+  // Filter courses based on search query
+  const filteredCourses = courses.filter(course => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      course.course.toLowerCase().includes(query) ||
+      course.professorList.some(prof => prof.toLowerCase().includes(query))
+    );
+  });
 
   const colors = [
     "hsl(211, 100%, 50%)",
@@ -63,6 +75,22 @@ const Courses = () => {
       </header>
 
       <main className="container mx-auto px-6 py-8">
+        {/* Search Bar */}
+        <div className="mb-8">
+          <div className="relative max-w-md">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <Search className="h-5 w-5 text-muted-foreground" />
+            </div>
+            <input
+              type="text"
+              placeholder="Search by course code or professor..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full h-12 pl-12 pr-4 rounded-xl bg-card border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+            />
+          </div>
+        </div>
+
         {/* Stats */}
         <div className="grid gap-4 md:grid-cols-3 mb-8">
           <div className="bg-card rounded-2xl border border-border p-6">
@@ -80,9 +108,15 @@ const Courses = () => {
         </div>
 
         {/* Course List */}
-        {courses.length > 0 ? (
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-sm text-muted-foreground">
+            {filteredCourses.length} course{filteredCourses.length !== 1 ? 's' : ''} {searchQuery && 'found'}
+          </p>
+        </div>
+        
+        {filteredCourses.length > 0 ? (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {courses.map((course, index) => (
+            {filteredCourses.map((course, index) => (
               <Link
                 key={course.course}
                 to={`/?search=${encodeURIComponent(course.course)}`}
