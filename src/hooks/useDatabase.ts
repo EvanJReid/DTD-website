@@ -1,10 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { 
   Document, 
+  Comment,
   getDocuments, 
   addDocument, 
   incrementDownload, 
-  getAnalytics 
+  getAnalytics,
+  getComments,
+  addComment as addCommentToDb,
+  deleteComment as deleteCommentFromDb,
 } from '@/lib/database';
 
 export const useDocuments = () => {
@@ -68,4 +72,37 @@ export const useAnalytics = () => {
   }, [refresh]);
 
   return { analytics, refresh };
+};
+
+export const useComments = (documentId: string) => {
+  const [comments, setComments] = useState<Comment[]>([]);
+
+  const refresh = useCallback(() => {
+    setComments(getComments(documentId));
+  }, [documentId]);
+
+  useEffect(() => {
+    refresh();
+    
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'studyhub_comments') {
+        refresh();
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, [refresh]);
+
+  const addComment = useCallback((author: string, content: string) => {
+    const newComment = addCommentToDb(documentId, author, content);
+    setComments(prev => [newComment, ...prev]);
+    return newComment;
+  }, [documentId]);
+
+  const deleteComment = useCallback((commentId: string) => {
+    deleteCommentFromDb(commentId);
+    refresh();
+  }, [refresh]);
+
+  return { comments, addComment, deleteComment, refresh };
 };

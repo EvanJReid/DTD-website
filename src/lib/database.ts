@@ -16,8 +16,17 @@ export interface DownloadEvent {
   timestamp: string;
 }
 
+export interface Comment {
+  id: string;
+  documentId: string;
+  author: string;
+  content: string;
+  createdAt: string;
+}
+
 const DOCUMENTS_KEY = 'studyhub_documents';
 const DOWNLOADS_KEY = 'studyhub_downloads';
+const COMMENTS_KEY = 'studyhub_comments';
 
 // Documents CRUD
 export const getDocuments = (): Document[] => {
@@ -54,6 +63,36 @@ export const incrementDownload = (documentId: string): void => {
 export const getDownloadEvents = (): DownloadEvent[] => {
   const data = localStorage.getItem(DOWNLOADS_KEY);
   return data ? JSON.parse(data) : [];
+};
+
+// Comments CRUD
+export const getComments = (documentId?: string): Comment[] => {
+  const data = localStorage.getItem(COMMENTS_KEY);
+  const comments: Comment[] = data ? JSON.parse(data) : [];
+  if (documentId) {
+    return comments.filter(c => c.documentId === documentId);
+  }
+  return comments;
+};
+
+export const addComment = (documentId: string, author: string, content: string): Comment => {
+  const comments = getComments();
+  const newComment: Comment = {
+    id: crypto.randomUUID(),
+    documentId,
+    author: author.trim() || 'Anonymous',
+    content: content.trim(),
+    createdAt: new Date().toISOString(),
+  };
+  comments.unshift(newComment);
+  localStorage.setItem(COMMENTS_KEY, JSON.stringify(comments));
+  return newComment;
+};
+
+export const deleteComment = (commentId: string): void => {
+  const comments = getComments();
+  const filtered = comments.filter(c => c.id !== commentId);
+  localStorage.setItem(COMMENTS_KEY, JSON.stringify(filtered));
 };
 
 // Analytics
