@@ -94,15 +94,15 @@ const Courses = () => {
         {/* Stats */}
         <div className="grid gap-4 md:grid-cols-3 mb-8">
           <div className="bg-card rounded-2xl border border-border p-6">
-            <p className="text-3xl font-semibold text-foreground">{analytics.uniqueCourses}</p>
+            <p className="text-3xl font-semibold text-foreground">{analytics?.uniqueCourses ?? 0}</p>
             <p className="text-sm text-muted-foreground mt-1">Total Courses</p>
           </div>
           <div className="bg-card rounded-2xl border border-border p-6">
-            <p className="text-3xl font-semibold text-foreground">{analytics.totalDocuments}</p>
+            <p className="text-3xl font-semibold text-foreground">{analytics?.totalDocuments ?? 0}</p>
             <p className="text-sm text-muted-foreground mt-1">Total Documents</p>
           </div>
           <div className="bg-card rounded-2xl border border-border p-6">
-            <p className="text-3xl font-semibold text-foreground">{analytics.uniqueProfessors}</p>
+            <p className="text-3xl font-semibold text-foreground">{analytics?.uniqueProfessors ?? 0}</p>
             <p className="text-sm text-muted-foreground mt-1">Professors</p>
           </div>
         </div>
