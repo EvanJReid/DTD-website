@@ -13,23 +13,34 @@ import {
 } from '@/lib/database';
 
 export const useDocuments = () => {
-  const [documents, setDocuments] = useState<Document[]>([]);
+  const [documents, setDocuments] = useState<Document[]>(() => getDocuments());
 
   const refresh = useCallback(() => {
     setDocuments(getDocuments());
   }, []);
 
   useEffect(() => {
-    refresh();
-    
     // Listen for storage changes from other tabs
     const handleStorage = (e: StorageEvent) => {
-      if (e.key === 'studyhub_documents') {
+      if (e.key === 'dtd_documents') {
         refresh();
       }
     };
+    
+    // Listen for same-tab updates via custom event
+    const handleLocalUpdate = (e: CustomEvent<{ key: string }>) => {
+      if (e.detail.key === 'dtd_documents') {
+        refresh();
+      }
+    };
+    
     window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
+    window.addEventListener('localStorageUpdate', handleLocalUpdate as EventListener);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('localStorageUpdate', handleLocalUpdate as EventListener);
+    };
   }, [refresh]);
 
   const uploadDocument = useCallback((data: {
@@ -65,33 +76,48 @@ export const useAnalytics = (timeRange: TimeRange = 'month') => {
   useEffect(() => {
     refresh();
     
-    const handleStorage = () => {
-      refresh();
-    };
+    const handleStorage = () => refresh();
+    const handleLocalUpdate = () => refresh();
+    
     window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
+    window.addEventListener('localStorageUpdate', handleLocalUpdate);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('localStorageUpdate', handleLocalUpdate);
+    };
   }, [refresh]);
 
   return { analytics, refresh };
 };
 
 export const useComments = (documentId: string) => {
-  const [comments, setComments] = useState<Comment[]>([]);
+  const [comments, setComments] = useState<Comment[]>(() => getComments(documentId));
 
   const refresh = useCallback(() => {
     setComments(getComments(documentId));
   }, [documentId]);
 
   useEffect(() => {
-    refresh();
-    
     const handleStorage = (e: StorageEvent) => {
-      if (e.key === 'studyhub_comments') {
+      if (e.key === 'dtd_comments') {
         refresh();
       }
     };
+    
+    const handleLocalUpdate = (e: CustomEvent<{ key: string }>) => {
+      if (e.detail.key === 'dtd_comments') {
+        refresh();
+      }
+    };
+    
     window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
+    window.addEventListener('localStorageUpdate', handleLocalUpdate as EventListener);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('localStorageUpdate', handleLocalUpdate as EventListener);
+    };
   }, [refresh]);
 
   const addComment = useCallback((author: string, content: string) => {
