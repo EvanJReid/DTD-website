@@ -2,13 +2,13 @@ import { FileText, Users, GraduationCap, TrendingUp } from "lucide-react";
 import { useAnalytics } from "@/hooks/useDatabase";
 
 export function Stats() {
-  const { analytics } = useAnalytics();
+  const { analytics, loading } = useAnalytics();
 
   const stats = [
-    { icon: FileText, label: "Documents", value: analytics.totalDocuments.toLocaleString() },
-    { icon: Users, label: "Professors", value: analytics.uniqueProfessors.toLocaleString() },
-    { icon: GraduationCap, label: "Courses", value: analytics.uniqueCourses.toLocaleString() },
-    { icon: TrendingUp, label: "Downloads", value: analytics.totalDownloads.toLocaleString() },
+    { icon: FileText, label: "Documents", value: analytics?.totalDocuments?.toLocaleString() ?? "0" },
+    { icon: Users, label: "Professors", value: analytics?.uniqueProfessors?.toLocaleString() ?? "0" },
+    { icon: GraduationCap, label: "Courses", value: analytics?.uniqueCourses?.toLocaleString() ?? "0" },
+    { icon: TrendingUp, label: "Downloads", value: analytics?.totalDownloads?.toLocaleString() ?? "0" },
   ];
 
   return (
