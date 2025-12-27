@@ -1,9 +1,14 @@
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Document } from "@/lib/database";
+import { useComments } from "@/hooks/useDatabase";
 import { 
   FileText, FileSpreadsheet, FileCode, Presentation, 
-  Download, Calendar, User, Eye, X 
+  Download, Calendar, User, Eye, X, MessageCircle, Send, Trash2
 } from "lucide-react";
 
 interface DocumentPreviewProps {
@@ -49,6 +54,97 @@ const formatDate = (isoString: string) => {
   });
 };
 
+const formatTimeAgo = (isoString: string) => {
+  const date = new Date(isoString);
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days = Math.floor(diff / 86400000);
+
+  if (minutes < 1) return 'Just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  if (hours < 24) return `${hours}h ago`;
+  if (days < 7) return `${days}d ago`;
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+};
+
+function CommentsSection({ documentId }: { documentId: string }) {
+  const { comments, addComment, deleteComment } = useComments(documentId);
+  const [author, setAuthor] = useState("");
+  const [content, setContent] = useState("");
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!content.trim()) return;
+    addComment(author, content);
+    setAuthor("");
+    setContent("");
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <MessageCircle className="h-4 w-4 text-muted-foreground" />
+        <span className="text-sm font-medium">Comments ({comments.length})</span>
+      </div>
+
+      {/* Comment Form */}
+      <form onSubmit={handleSubmit} className="space-y-3">
+        <Input
+          placeholder="Your name (optional)"
+          value={author}
+          onChange={(e) => setAuthor(e.target.value)}
+          className="h-9"
+        />
+        <div className="flex gap-2">
+          <Textarea
+            placeholder="Add a comment..."
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            className="min-h-[60px] resize-none flex-1"
+          />
+          <Button type="submit" size="icon" disabled={!content.trim()}>
+            <Send className="h-4 w-4" />
+          </Button>
+        </div>
+      </form>
+
+      {/* Comments List */}
+      {comments.length > 0 && (
+        <ScrollArea className="max-h-48">
+          <div className="space-y-3">
+            {comments.map((comment) => (
+              <div 
+                key={comment.id} 
+                className="bg-muted/50 rounded-lg p-3 group relative"
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm font-medium">{comment.author}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">
+                      {formatTimeAgo(comment.createdAt)}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => deleteComment(comment.id)}
+                    >
+                      <Trash2 className="h-3 w-3 text-muted-foreground hover:text-destructive" />
+                    </Button>
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground">{comment.content}</p>
+              </div>
+            ))}
+          </div>
+        </ScrollArea>
+      )}
+    </div>
+  );
+}
+
 export function DocumentPreview({ document, isOpen, onClose, onDownload }: DocumentPreviewProps) {
   if (!document) return null;
 
@@ -63,7 +159,7 @@ export function DocumentPreview({ document, isOpen, onClose, onDownload }: Docum
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Eye className="h-5 w-5 text-primary" />
@@ -123,6 +219,9 @@ export function DocumentPreview({ document, isOpen, onClose, onDownload }: Docum
               </span>
             </div>
           </div>
+
+          {/* Comments Section */}
+          <CommentsSection documentId={document.id} />
 
           {/* Actions */}
           <div className="flex gap-3">
