@@ -1,4 +1,5 @@
 // Local database using localStorage for persistence
+// This database is browser-local - data persists on each user's device
 
 export interface Document {
   id: string;
@@ -24,14 +25,37 @@ export interface Comment {
   createdAt: string;
 }
 
-const DOCUMENTS_KEY = 'studyhub_documents';
-const DOWNLOADS_KEY = 'studyhub_downloads';
-const COMMENTS_KEY = 'studyhub_comments';
+const DOCUMENTS_KEY = 'dtd_documents';
+const DOWNLOADS_KEY = 'dtd_downloads';
+const COMMENTS_KEY = 'dtd_comments';
+
+// Helper to safely parse JSON from localStorage
+const safeGetItem = <T>(key: string, defaultValue: T): T => {
+  try {
+    const data = localStorage.getItem(key);
+    return data ? JSON.parse(data) : defaultValue;
+  } catch (error) {
+    console.error(`Error reading ${key} from localStorage:`, error);
+    return defaultValue;
+  }
+};
+
+// Helper to safely save to localStorage
+const safeSetItem = (key: string, value: unknown): boolean => {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+    // Dispatch custom event for same-tab updates
+    window.dispatchEvent(new CustomEvent('localStorageUpdate', { detail: { key } }));
+    return true;
+  } catch (error) {
+    console.error(`Error saving ${key} to localStorage:`, error);
+    return false;
+  }
+};
 
 // Documents CRUD
 export const getDocuments = (): Document[] => {
-  const data = localStorage.getItem(DOCUMENTS_KEY);
-  return data ? JSON.parse(data) : [];
+  return safeGetItem<Document[]>(DOCUMENTS_KEY, []);
 };
 
 export const addDocument = (doc: Omit<Document, 'id' | 'downloads'>): Document => {
@@ -42,7 +66,7 @@ export const addDocument = (doc: Omit<Document, 'id' | 'downloads'>): Document =
     downloads: 0,
   };
   documents.unshift(newDoc);
-  localStorage.setItem(DOCUMENTS_KEY, JSON.stringify(documents));
+  safeSetItem(DOCUMENTS_KEY, documents);
   return newDoc;
 };
 
@@ -51,24 +75,22 @@ export const incrementDownload = (documentId: string): void => {
   const doc = documents.find(d => d.id === documentId);
   if (doc) {
     doc.downloads += 1;
-    localStorage.setItem(DOCUMENTS_KEY, JSON.stringify(documents));
+    safeSetItem(DOCUMENTS_KEY, documents);
     
     // Track download event
     const downloads = getDownloadEvents();
     downloads.push({ documentId, timestamp: new Date().toISOString() });
-    localStorage.setItem(DOWNLOADS_KEY, JSON.stringify(downloads));
+    safeSetItem(DOWNLOADS_KEY, downloads);
   }
 };
 
 export const getDownloadEvents = (): DownloadEvent[] => {
-  const data = localStorage.getItem(DOWNLOADS_KEY);
-  return data ? JSON.parse(data) : [];
+  return safeGetItem<DownloadEvent[]>(DOWNLOADS_KEY, []);
 };
 
 // Comments CRUD
 export const getComments = (documentId?: string): Comment[] => {
-  const data = localStorage.getItem(COMMENTS_KEY);
-  const comments: Comment[] = data ? JSON.parse(data) : [];
+  const comments = safeGetItem<Comment[]>(COMMENTS_KEY, []);
   if (documentId) {
     return comments.filter(c => c.documentId === documentId);
   }
@@ -85,14 +107,14 @@ export const addComment = (documentId: string, author: string, content: string):
     createdAt: new Date().toISOString(),
   };
   comments.unshift(newComment);
-  localStorage.setItem(COMMENTS_KEY, JSON.stringify(comments));
+  safeSetItem(COMMENTS_KEY, comments);
   return newComment;
 };
 
 export const deleteComment = (commentId: string): void => {
   const comments = getComments();
   const filtered = comments.filter(c => c.id !== commentId);
-  localStorage.setItem(COMMENTS_KEY, JSON.stringify(filtered));
+  safeSetItem(COMMENTS_KEY, filtered);
 };
 
 // Analytics
