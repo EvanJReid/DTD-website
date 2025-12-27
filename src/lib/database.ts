@@ -96,17 +96,50 @@ export const deleteComment = (commentId: string): void => {
 };
 
 // Analytics
-export const getAnalytics = () => {
-  const documents = getDocuments();
-  const downloads = getDownloadEvents();
+export type TimeRange = 'week' | 'month' | 'year';
+
+const getDateRangeStart = (range: TimeRange): Date => {
+  const now = new Date();
+  switch (range) {
+    case 'week':
+      return new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
+    case 'month':
+      return new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+    case 'year':
+      return new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+  }
+};
+
+const filterByTimeRange = <T extends { uploadedAt?: string; timestamp?: string }>(
+  items: T[],
+  range: TimeRange,
+  dateField: 'uploadedAt' | 'timestamp' = 'uploadedAt'
+): T[] => {
+  const startDate = getDateRangeStart(range);
+  return items.filter(item => {
+    const dateStr = dateField === 'uploadedAt' 
+      ? (item as any).uploadedAt 
+      : (item as any).timestamp;
+    if (!dateStr) return false;
+    return new Date(dateStr) >= startDate;
+  });
+};
+
+export const getAnalytics = (timeRange: TimeRange = 'month') => {
+  const allDocuments = getDocuments();
+  const allDownloads = getDownloadEvents();
+  
+  // Filter by time range
+  const documents = filterByTimeRange(allDocuments, timeRange, 'uploadedAt');
+  const downloads = filterByTimeRange(allDownloads, timeRange, 'timestamp');
   
   const totalDocuments = documents.length;
   const totalDownloads = documents.reduce((sum, d) => sum + d.downloads, 0);
   const uniqueCourses = new Set(documents.map(d => d.course)).size;
   const uniqueProfessors = new Set(documents.map(d => d.professor)).size;
   
-  // Uploads over time (last 6 months)
-  const uploadsOverTime = getUploadsOverTime(documents);
+  // Uploads over time
+  const uploadsOverTime = getUploadsOverTime(documents, timeRange);
   
   // Course distribution
   const courseDistribution = getCourseDistribution(documents);
@@ -117,8 +150,8 @@ export const getAnalytics = () => {
   // Top professors
   const topProfessors = getTopProfessors(documents);
   
-  // Download trends (last 7 days)
-  const downloadTrends = getDownloadTrends(downloads);
+  // Download trends
+  const downloadTrends = getDownloadTrends(downloads, timeRange);
   
   // Recent activity
   const recentActivity = getRecentActivity(documents, downloads);
@@ -134,25 +167,59 @@ export const getAnalytics = () => {
     topProfessors,
     downloadTrends,
     recentActivity,
+    timeRange,
   };
 };
 
-const getUploadsOverTime = (documents: Document[]) => {
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const getUploadsOverTime = (documents: Document[], timeRange: TimeRange) => {
   const now = new Date();
-  const result = [];
   
-  for (let i = 5; i >= 0; i--) {
-    const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const monthName = months[date.getMonth()];
-    const count = documents.filter(d => {
-      const docDate = new Date(d.uploadedAt);
-      return docDate.getMonth() === date.getMonth() && docDate.getFullYear() === date.getFullYear();
-    }).length;
-    result.push({ month: monthName, uploads: count });
+  if (timeRange === 'week') {
+    // Daily for the past 7 days
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const result = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(now);
+      date.setDate(date.getDate() - i);
+      const dayName = days[date.getDay()];
+      const count = documents.filter(d => {
+        const docDate = new Date(d.uploadedAt);
+        return docDate.toDateString() === date.toDateString();
+      }).length;
+      result.push({ month: dayName, uploads: count });
+    }
+    return result;
+  } else if (timeRange === 'month') {
+    // Weekly for the past 4 weeks
+    const result = [];
+    for (let i = 3; i >= 0; i--) {
+      const weekEnd = new Date(now);
+      weekEnd.setDate(weekEnd.getDate() - (i * 7));
+      const weekStart = new Date(weekEnd);
+      weekStart.setDate(weekStart.getDate() - 6);
+      const label = `Week ${4 - i}`;
+      const count = documents.filter(d => {
+        const docDate = new Date(d.uploadedAt);
+        return docDate >= weekStart && docDate <= weekEnd;
+      }).length;
+      result.push({ month: label, uploads: count });
+    }
+    return result;
+  } else {
+    // Monthly for the past 12 months
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const result = [];
+    for (let i = 11; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthName = months[date.getMonth()];
+      const count = documents.filter(d => {
+        const docDate = new Date(d.uploadedAt);
+        return docDate.getMonth() === date.getMonth() && docDate.getFullYear() === date.getFullYear();
+      }).length;
+      result.push({ month: monthName, uploads: count });
+    }
+    return result;
   }
-  
-  return result;
 };
 
 const getCourseDistribution = (documents: Document[]) => {
@@ -210,23 +277,55 @@ const getTopProfessors = (documents: Document[]) => {
     .slice(0, 5);
 };
 
-const getDownloadTrends = (downloads: DownloadEvent[]) => {
-  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const getDownloadTrends = (downloads: DownloadEvent[], timeRange: TimeRange) => {
   const now = new Date();
-  const result = [];
   
-  for (let i = 6; i >= 0; i--) {
-    const date = new Date(now);
-    date.setDate(date.getDate() - i);
-    const dayName = days[date.getDay()];
-    const count = downloads.filter(d => {
-      const dlDate = new Date(d.timestamp);
-      return dlDate.toDateString() === date.toDateString();
-    }).length;
-    result.push({ day: dayName, downloads: count });
+  if (timeRange === 'week') {
+    // Daily for the past 7 days
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const result = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(now);
+      date.setDate(date.getDate() - i);
+      const dayName = days[date.getDay()];
+      const count = downloads.filter(d => {
+        const dlDate = new Date(d.timestamp);
+        return dlDate.toDateString() === date.toDateString();
+      }).length;
+      result.push({ day: dayName, downloads: count });
+    }
+    return result;
+  } else if (timeRange === 'month') {
+    // Weekly for the past 4 weeks
+    const result = [];
+    for (let i = 3; i >= 0; i--) {
+      const weekEnd = new Date(now);
+      weekEnd.setDate(weekEnd.getDate() - (i * 7));
+      const weekStart = new Date(weekEnd);
+      weekStart.setDate(weekStart.getDate() - 6);
+      const label = `Week ${4 - i}`;
+      const count = downloads.filter(d => {
+        const dlDate = new Date(d.timestamp);
+        return dlDate >= weekStart && dlDate <= weekEnd;
+      }).length;
+      result.push({ day: label, downloads: count });
+    }
+    return result;
+  } else {
+    // Monthly for the past 12 months
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const result = [];
+    for (let i = 11; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthName = months[date.getMonth()];
+      const count = downloads.filter(d => {
+        const dlDate = new Date(d.timestamp);
+        return dlDate.getMonth() === date.getMonth() && dlDate.getFullYear() === date.getFullYear();
+      }).length;
+      result.push({ day: monthName, downloads: count });
+    }
+    return result;
   }
-  
-  return result;
 };
 
 const getRecentActivity = (documents: Document[], downloads: DownloadEvent[]) => {

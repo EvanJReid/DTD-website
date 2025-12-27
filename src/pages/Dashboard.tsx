@@ -35,13 +35,37 @@ const StatCard = ({
 
 const Dashboard = () => {
   const [timeRange, setTimeRange] = useState<"week" | "month" | "year">("month");
-  const { analytics, refresh } = useAnalytics();
+  const { analytics, refresh } = useAnalytics(timeRange);
 
   // Auto-refresh every 5 seconds
   useEffect(() => {
     const interval = setInterval(refresh, 5000);
     return () => clearInterval(interval);
   }, [refresh]);
+
+  const getTimeRangeLabel = () => {
+    switch (timeRange) {
+      case 'week': return 'Last 7 days';
+      case 'month': return 'Last 4 weeks';
+      case 'year': return 'Last 12 months';
+    }
+  };
+
+  const getUploadsLabel = () => {
+    switch (timeRange) {
+      case 'week': return 'Daily upload trends';
+      case 'month': return 'Weekly upload trends';
+      case 'year': return 'Monthly upload trends';
+    }
+  };
+
+  const getDownloadsLabel = () => {
+    switch (timeRange) {
+      case 'week': return 'Daily downloads';
+      case 'month': return 'Weekly downloads';
+      case 'year': return 'Monthly downloads';
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -113,12 +137,12 @@ const Dashboard = () => {
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h2 className="text-lg font-semibold">Uploads Over Time</h2>
-                <p className="text-sm text-muted-foreground">Monthly upload trends</p>
+                <p className="text-sm text-muted-foreground">{getUploadsLabel()}</p>
               </div>
               {analytics.uploadsOverTime.some(d => d.uploads > 0) && (
                 <div className="flex items-center gap-2 text-sm text-green-600">
                   <TrendingUp className="h-4 w-4" />
-                  <span>Live data</span>
+                  <span>{getTimeRangeLabel()}</span>
                 </div>
               )}
             </div>
@@ -173,12 +197,12 @@ const Dashboard = () => {
           <div className="bg-card rounded-2xl border border-border p-6">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="text-lg font-semibold">Weekly Downloads</h2>
-                <p className="text-sm text-muted-foreground">Downloads this week</p>
+                <h2 className="text-lg font-semibold">Downloads</h2>
+                <p className="text-sm text-muted-foreground">{getDownloadsLabel()}</p>
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Calendar className="h-4 w-4" />
-                <span>Last 7 days</span>
+                <span>{getTimeRangeLabel()}</span>
               </div>
             </div>
             <div className="h-64">

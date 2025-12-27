@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { 
   Document, 
   Comment,
+  TimeRange,
   getDocuments, 
   addDocument, 
   incrementDownload, 
@@ -54,12 +55,12 @@ export const useDocuments = () => {
   return { documents, uploadDocument, trackDownload, refresh };
 };
 
-export const useAnalytics = () => {
-  const [analytics, setAnalytics] = useState(getAnalytics());
+export const useAnalytics = (timeRange: TimeRange = 'month') => {
+  const [analytics, setAnalytics] = useState(() => getAnalytics(timeRange));
 
   const refresh = useCallback(() => {
-    setAnalytics(getAnalytics());
-  }, []);
+    setAnalytics(getAnalytics(timeRange));
+  }, [timeRange]);
 
   useEffect(() => {
     refresh();
