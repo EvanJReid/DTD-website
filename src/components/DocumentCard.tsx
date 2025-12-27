@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { FileText, FileSpreadsheet, FileCode, Presentation, Download, Calendar, User, Eye } from "lucide-react";
 import { Button } from "./ui/button";
-import { Document } from "@/lib/database";
+import { Document } from "@/lib/api";
 import { DocumentPreview } from "./DocumentPreview";
 
 interface DocumentCardProps {

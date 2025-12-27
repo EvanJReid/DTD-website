@@ -5,14 +5,14 @@ import { Stats } from "@/components/Stats";
 import { DocumentGrid } from "@/components/DocumentGrid";
 import { UploadModal, UploadData } from "@/components/UploadModal";
 import { useDocuments } from "@/hooks/useDatabase";
-import { Document } from "@/lib/database";
+import { Document } from "@/lib/api";
 
 const Index = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const { documents, uploadDocument, trackDownload } = useDocuments();
 
-  const handleUpload = (data: UploadData) => {
+  const handleUpload = async (data: UploadData) => {
     const fileExt = data.file?.name.split('.').pop()?.toLowerCase() || 'pdf';
     const typeMapping: Record<string, Document['fileType']> = {
       pdf: 'pdf',
@@ -24,7 +24,7 @@ const Index = () => {
       ppt: 'powerpoint',
     };
 
-    uploadDocument({
+    await uploadDocument({
       title: data.title,
       course: data.course,
       professor: data.professor,

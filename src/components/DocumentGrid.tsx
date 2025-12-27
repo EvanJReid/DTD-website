@@ -1,5 +1,5 @@
 import { DocumentCard } from "./DocumentCard";
-import { Document } from "@/lib/database";
+import { Document } from "@/lib/api";
 import { FileX } from "lucide-react";
 
 interface DocumentGridProps {

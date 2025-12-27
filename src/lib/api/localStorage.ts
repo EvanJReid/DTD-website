@@ -1,29 +1,7 @@
-// Local database using localStorage for persistence
-// This database is browser-local - data persists on each user's device
+// localStorage implementation of the Database API
+// This can be swapped for Oracle REST API by implementing the same interface
 
-export interface Document {
-  id: string;
-  title: string;
-  course: string;
-  professor: string;
-  fileType: 'pdf' | 'excel' | 'python' | 'java' | 'powerpoint' | 'other';
-  fileName: string;
-  uploadedAt: string;
-  downloads: number;
-}
-
-export interface DownloadEvent {
-  documentId: string;
-  timestamp: string;
-}
-
-export interface Comment {
-  id: string;
-  documentId: string;
-  author: string;
-  content: string;
-  createdAt: string;
-}
+import { Document, DownloadEvent, Comment, TimeRange, Analytics, DatabaseAPI } from './types';
 
 const DOCUMENTS_KEY = 'dtd_documents';
 const DOWNLOADS_KEY = 'dtd_downloads';
@@ -44,7 +22,6 @@ const safeGetItem = <T>(key: string, defaultValue: T): T => {
 const safeSetItem = (key: string, value: unknown): boolean => {
   try {
     localStorage.setItem(key, JSON.stringify(value));
-    // Dispatch custom event for same-tab updates
     window.dispatchEvent(new CustomEvent('localStorageUpdate', { detail: { key } }));
     return true;
   } catch (error) {
@@ -53,73 +30,7 @@ const safeSetItem = (key: string, value: unknown): boolean => {
   }
 };
 
-// Documents CRUD
-export const getDocuments = (): Document[] => {
-  return safeGetItem<Document[]>(DOCUMENTS_KEY, []);
-};
-
-export const addDocument = (doc: Omit<Document, 'id' | 'downloads'>): Document => {
-  const documents = getDocuments();
-  const newDoc: Document = {
-    ...doc,
-    id: crypto.randomUUID(),
-    downloads: 0,
-  };
-  documents.unshift(newDoc);
-  safeSetItem(DOCUMENTS_KEY, documents);
-  return newDoc;
-};
-
-export const incrementDownload = (documentId: string): void => {
-  const documents = getDocuments();
-  const doc = documents.find(d => d.id === documentId);
-  if (doc) {
-    doc.downloads += 1;
-    safeSetItem(DOCUMENTS_KEY, documents);
-    
-    // Track download event
-    const downloads = getDownloadEvents();
-    downloads.push({ documentId, timestamp: new Date().toISOString() });
-    safeSetItem(DOWNLOADS_KEY, downloads);
-  }
-};
-
-export const getDownloadEvents = (): DownloadEvent[] => {
-  return safeGetItem<DownloadEvent[]>(DOWNLOADS_KEY, []);
-};
-
-// Comments CRUD
-export const getComments = (documentId?: string): Comment[] => {
-  const comments = safeGetItem<Comment[]>(COMMENTS_KEY, []);
-  if (documentId) {
-    return comments.filter(c => c.documentId === documentId);
-  }
-  return comments;
-};
-
-export const addComment = (documentId: string, author: string, content: string): Comment => {
-  const comments = getComments();
-  const newComment: Comment = {
-    id: crypto.randomUUID(),
-    documentId,
-    author: author.trim() || 'Anonymous',
-    content: content.trim(),
-    createdAt: new Date().toISOString(),
-  };
-  comments.unshift(newComment);
-  safeSetItem(COMMENTS_KEY, comments);
-  return newComment;
-};
-
-export const deleteComment = (commentId: string): void => {
-  const comments = getComments();
-  const filtered = comments.filter(c => c.id !== commentId);
-  safeSetItem(COMMENTS_KEY, filtered);
-};
-
-// Analytics
-export type TimeRange = 'week' | 'month' | 'year';
-
+// Analytics helper functions
 const getDateRangeStart = (range: TimeRange): Date => {
   const now = new Date();
   switch (range) {
@@ -147,57 +58,10 @@ const filterByTimeRange = <T extends { uploadedAt?: string; timestamp?: string }
   });
 };
 
-export const getAnalytics = (timeRange: TimeRange = 'month') => {
-  const allDocuments = getDocuments();
-  const allDownloads = getDownloadEvents();
-  
-  // Filter by time range
-  const documents = filterByTimeRange(allDocuments, timeRange, 'uploadedAt');
-  const downloads = filterByTimeRange(allDownloads, timeRange, 'timestamp');
-  
-  const totalDocuments = documents.length;
-  const totalDownloads = documents.reduce((sum, d) => sum + d.downloads, 0);
-  const uniqueCourses = new Set(documents.map(d => d.course)).size;
-  const uniqueProfessors = new Set(documents.map(d => d.professor)).size;
-  
-  // Uploads over time
-  const uploadsOverTime = getUploadsOverTime(documents, timeRange);
-  
-  // Course distribution
-  const courseDistribution = getCourseDistribution(documents);
-  
-  // Document types
-  const documentTypes = getDocumentTypeDistribution(documents);
-  
-  // Top professors
-  const topProfessors = getTopProfessors(documents);
-  
-  // Download trends
-  const downloadTrends = getDownloadTrends(downloads, timeRange);
-  
-  // Recent activity
-  const recentActivity = getRecentActivity(documents, downloads);
-  
-  return {
-    totalDocuments,
-    totalDownloads,
-    uniqueCourses,
-    uniqueProfessors,
-    uploadsOverTime,
-    courseDistribution,
-    documentTypes,
-    topProfessors,
-    downloadTrends,
-    recentActivity,
-    timeRange,
-  };
-};
-
 const getUploadsOverTime = (documents: Document[], timeRange: TimeRange) => {
   const now = new Date();
   
   if (timeRange === 'week') {
-    // Daily for the past 7 days
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const result = [];
     for (let i = 6; i >= 0; i--) {
@@ -212,7 +76,6 @@ const getUploadsOverTime = (documents: Document[], timeRange: TimeRange) => {
     }
     return result;
   } else if (timeRange === 'month') {
-    // Weekly for the past 4 weeks
     const result = [];
     for (let i = 3; i >= 0; i--) {
       const weekEnd = new Date(now);
@@ -228,7 +91,6 @@ const getUploadsOverTime = (documents: Document[], timeRange: TimeRange) => {
     }
     return result;
   } else {
-    // Monthly for the past 12 months
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const result = [];
     for (let i = 11; i >= 0; i--) {
@@ -303,7 +165,6 @@ const getDownloadTrends = (downloads: DownloadEvent[], timeRange: TimeRange) => 
   const now = new Date();
   
   if (timeRange === 'week') {
-    // Daily for the past 7 days
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const result = [];
     for (let i = 6; i >= 0; i--) {
@@ -318,7 +179,6 @@ const getDownloadTrends = (downloads: DownloadEvent[], timeRange: TimeRange) => 
     }
     return result;
   } else if (timeRange === 'month') {
-    // Weekly for the past 4 weeks
     const result = [];
     for (let i = 3; i >= 0; i--) {
       const weekEnd = new Date(now);
@@ -334,7 +194,6 @@ const getDownloadTrends = (downloads: DownloadEvent[], timeRange: TimeRange) => 
     }
     return result;
   } else {
-    // Monthly for the past 12 months
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const result = [];
     for (let i = 11; i >= 0; i--) {
@@ -348,6 +207,19 @@ const getDownloadTrends = (downloads: DownloadEvent[], timeRange: TimeRange) => 
     }
     return result;
   }
+};
+
+const formatTimeAgo = (date: Date): string => {
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days = Math.floor(diff / 86400000);
+  
+  if (minutes < 1) return 'Just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  if (hours < 24) return `${hours}h ago`;
+  return `${days}d ago`;
 };
 
 const getRecentActivity = (documents: Document[], downloads: DownloadEvent[]) => {
@@ -379,15 +251,88 @@ const getRecentActivity = (documents: Document[], downloads: DownloadEvent[]) =>
     .slice(0, 5);
 };
 
-const formatTimeAgo = (date: Date): string => {
-  const now = new Date();
-  const diff = now.getTime() - date.getTime();
-  const minutes = Math.floor(diff / 60000);
-  const hours = Math.floor(diff / 3600000);
-  const days = Math.floor(diff / 86400000);
-  
-  if (minutes < 1) return 'Just now';
-  if (minutes < 60) return `${minutes}m ago`;
-  if (hours < 24) return `${hours}h ago`;
-  return `${days}d ago`;
+// localStorage implementation of DatabaseAPI
+export const localStorageAPI: DatabaseAPI = {
+  async getDocuments(): Promise<Document[]> {
+    return safeGetItem<Document[]>(DOCUMENTS_KEY, []);
+  },
+
+  async addDocument(doc: Omit<Document, 'id' | 'downloads'>): Promise<Document> {
+    const documents = safeGetItem<Document[]>(DOCUMENTS_KEY, []);
+    const newDoc: Document = {
+      ...doc,
+      id: crypto.randomUUID(),
+      downloads: 0,
+    };
+    documents.unshift(newDoc);
+    safeSetItem(DOCUMENTS_KEY, documents);
+    return newDoc;
+  },
+
+  async incrementDownload(documentId: string): Promise<void> {
+    const documents = safeGetItem<Document[]>(DOCUMENTS_KEY, []);
+    const doc = documents.find(d => d.id === documentId);
+    if (doc) {
+      doc.downloads += 1;
+      safeSetItem(DOCUMENTS_KEY, documents);
+      
+      const downloads = safeGetItem<DownloadEvent[]>(DOWNLOADS_KEY, []);
+      downloads.push({ documentId, timestamp: new Date().toISOString() });
+      safeSetItem(DOWNLOADS_KEY, downloads);
+    }
+  },
+
+  async getDownloadEvents(): Promise<DownloadEvent[]> {
+    return safeGetItem<DownloadEvent[]>(DOWNLOADS_KEY, []);
+  },
+
+  async getComments(documentId?: string): Promise<Comment[]> {
+    const comments = safeGetItem<Comment[]>(COMMENTS_KEY, []);
+    if (documentId) {
+      return comments.filter(c => c.documentId === documentId);
+    }
+    return comments;
+  },
+
+  async addComment(documentId: string, author: string, content: string): Promise<Comment> {
+    const comments = safeGetItem<Comment[]>(COMMENTS_KEY, []);
+    const newComment: Comment = {
+      id: crypto.randomUUID(),
+      documentId,
+      author: author.trim() || 'Anonymous',
+      content: content.trim(),
+      createdAt: new Date().toISOString(),
+    };
+    comments.unshift(newComment);
+    safeSetItem(COMMENTS_KEY, comments);
+    return newComment;
+  },
+
+  async deleteComment(commentId: string): Promise<void> {
+    const comments = safeGetItem<Comment[]>(COMMENTS_KEY, []);
+    const filtered = comments.filter(c => c.id !== commentId);
+    safeSetItem(COMMENTS_KEY, filtered);
+  },
+
+  async getAnalytics(timeRange: TimeRange = 'month'): Promise<Analytics> {
+    const allDocuments = safeGetItem<Document[]>(DOCUMENTS_KEY, []);
+    const allDownloads = safeGetItem<DownloadEvent[]>(DOWNLOADS_KEY, []);
+    
+    const documents = filterByTimeRange(allDocuments, timeRange, 'uploadedAt');
+    const downloads = filterByTimeRange(allDownloads, timeRange, 'timestamp');
+    
+    return {
+      totalDocuments: documents.length,
+      totalDownloads: documents.reduce((sum, d) => sum + d.downloads, 0),
+      uniqueCourses: new Set(documents.map(d => d.course)).size,
+      uniqueProfessors: new Set(documents.map(d => d.professor)).size,
+      uploadsOverTime: getUploadsOverTime(documents, timeRange),
+      courseDistribution: getCourseDistribution(documents),
+      documentTypes: getDocumentTypeDistribution(documents),
+      topProfessors: getTopProfessors(documents),
+      downloadTrends: getDownloadTrends(downloads, timeRange),
+      recentActivity: getRecentActivity(documents, downloads),
+      timeRange,
+    };
+  },
 };
