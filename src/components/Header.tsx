@@ -1,12 +1,13 @@
 import { Link } from "react-router-dom";
-import { GraduationCap, Upload, BarChart3 } from "lucide-react";
+import { GraduationCap, Upload, BarChart3, FolderPlus } from "lucide-react";
 import { Button } from "./ui/button";
 
 interface HeaderProps {
   onUploadClick: () => void;
+  onFolderClick?: () => void;
 }
 
-export function Header({ onUploadClick }: HeaderProps) {
+export function Header({ onUploadClick, onFolderClick }: HeaderProps) {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 glass border-b">
       <div className="container mx-auto px-6">
@@ -34,13 +35,19 @@ export function Header({ onUploadClick }: HeaderProps) {
             </Link>
           </nav>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <Link to="/dashboard">
               <Button variant="ghost" size="sm" className="hidden sm:flex">
                 <BarChart3 className="h-4 w-4" />
                 Dashboard
               </Button>
             </Link>
+            {onFolderClick && (
+              <Button onClick={onFolderClick} variant="secondary" size="sm">
+                <FolderPlus className="h-4 w-4" />
+                <span className="hidden sm:inline">Collection</span>
+              </Button>
+            )}
             <Button onClick={onUploadClick} size="sm">
               <Upload className="h-4 w-4" />
               Upload
