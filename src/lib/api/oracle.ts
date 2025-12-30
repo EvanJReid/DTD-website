@@ -8,7 +8,7 @@
 // 3. Create REST modules with the endpoints below
 // 4. Update ORACLE_APEX_BASE_URL with your APEX instance URL
 
-import { DatabaseAPI, Document, Comment, Analytics, DownloadEvent, TimeRange } from './types';
+import { DatabaseAPI, Document, Comment, Analytics, DownloadEvent, TimeRange, Folder } from './types';
 
 // TODO: Replace with your Oracle APEX REST base URL
 // Example: https://abc123-mydb.adb.us-ashburn-1.oraclecloudapps.com/ords/myworkspace/api
@@ -208,6 +208,115 @@ export const oracleAPI: DatabaseAPI = {
     return data.items.map(event => ({
       documentId: String(event.document_id),
       timestamp: toISODate(event.timestamp),
+    }));
+  },
+
+  // ==================
+  // FOLDERS
+  // ==================
+
+  async getFolders(): Promise<Folder[]> {
+    const data = await apexFetch<{ items: any[] }>('/folders');
+    return data.items.map(folder => ({
+      id: String(folder.id),
+      name: folder.name,
+      description: folder.description || '',
+      course: folder.course,
+      professor: folder.professor,
+      createdAt: toISODate(folder.created_at),
+      documentCount: folder.document_count || 0,
+    }));
+  },
+
+  async getFolder(folderId: string): Promise<Folder | null> {
+    try {
+      const folder = await apexFetch<any>(`/folders/${folderId}`);
+      return {
+        id: String(folder.id),
+        name: folder.name,
+        description: folder.description || '',
+        course: folder.course,
+        professor: folder.professor,
+        createdAt: toISODate(folder.created_at),
+        documentCount: folder.document_count || 0,
+      };
+    } catch {
+      return null;
+    }
+  },
+
+  async addFolder(folder: Omit<Folder, 'id' | 'documentCount' | 'createdAt'>): Promise<Folder> {
+    const result = await apexFetch<any>('/folders', {
+      method: 'POST',
+      body: JSON.stringify({
+        name: folder.name,
+        description: folder.description,
+        course: folder.course,
+        professor: folder.professor,
+        created_at: new Date().toISOString(),
+      }),
+    });
+
+    return {
+      id: String(result.id),
+      name: result.name,
+      description: result.description || '',
+      course: result.course,
+      professor: result.professor,
+      createdAt: toISODate(result.created_at),
+      documentCount: 0,
+    };
+  },
+
+  async deleteFolder(folderId: string): Promise<void> {
+    await apexFetch(`/folders/${folderId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  async getFolderDocuments(folderId: string): Promise<Document[]> {
+    const data = await apexFetch<{ items: any[] }>(`/folders/${folderId}/documents`);
+    return data.items.map(doc => ({
+      id: String(doc.id),
+      title: doc.title,
+      course: doc.course,
+      professor: doc.professor,
+      fileType: doc.file_type,
+      fileName: doc.file_name,
+      uploadedAt: toISODate(doc.uploaded_at),
+      downloads: doc.downloads || 0,
+      folderId: String(doc.folder_id),
+    }));
+  },
+
+  async addDocumentsToFolder(
+    folderId: string,
+    docs: Omit<Document, 'id' | 'downloads' | 'folderId'>[]
+  ): Promise<Document[]> {
+    const results = await apexFetch<{ items: any[] }>(`/folders/${folderId}/documents`, {
+      method: 'POST',
+      body: JSON.stringify({
+        documents: docs.map(doc => ({
+          title: doc.title,
+          course: doc.course,
+          professor: doc.professor,
+          file_type: doc.fileType,
+          file_name: doc.fileName,
+          uploaded_at: doc.uploadedAt,
+        })),
+      }),
+    });
+
+    return results.items.map(doc => ({
+      id: String(doc.id),
+      title: doc.title,
+      course: doc.course,
+      professor: doc.professor,
+      fileType: doc.file_type,
+      fileName: doc.file_name,
+      uploadedAt: toISODate(doc.uploaded_at),
+      downloads: 0,
+      folderId,
     }));
   },
 };

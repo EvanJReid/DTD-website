@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { api, STORAGE_KEYS, Document, Comment, TimeRange, Analytics } from '@/lib/api';
+import { api, STORAGE_KEYS, Document, Comment, TimeRange, Analytics, Folder } from '@/lib/api';
 
 export const useDocuments = () => {
   const [documents, setDocuments] = useState<Document[]>([]);
@@ -160,4 +160,142 @@ export const useComments = (documentId: string) => {
   }, [refresh]);
 
   return { comments, loading, addComment, deleteComment, refresh };
+};
+
+// ==================
+// FOLDER HOOKS
+// ==================
+
+export const useFolders = () => {
+  const [folders, setFolders] = useState<Folder[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const refresh = useCallback(async () => {
+    try {
+      const data = await api.getFolders();
+      setFolders(data);
+    } catch (error) {
+      console.error('Failed to fetch folders:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    refresh();
+    
+    const handleLocalUpdate = () => refresh();
+    window.addEventListener('localStorageUpdate', handleLocalUpdate);
+    
+    return () => {
+      window.removeEventListener('localStorageUpdate', handleLocalUpdate);
+    };
+  }, [refresh]);
+
+  const createFolder = useCallback(async (data: {
+    name: string;
+    description: string;
+    course: string;
+    professor: string;
+    files: File[];
+  }) => {
+    // Create the folder
+    const newFolder = await api.addFolder({
+      name: data.name,
+      description: data.description,
+      course: data.course,
+      professor: data.professor,
+    });
+
+    // Add documents to folder
+    if (data.files.length > 0) {
+      const typeMapping: Record<string, Document['fileType']> = {
+        pdf: 'pdf',
+        xlsx: 'excel',
+        xls: 'excel',
+        py: 'python',
+        java: 'java',
+        pptx: 'powerpoint',
+        ppt: 'powerpoint',
+      };
+
+      const docs = data.files.map(file => {
+        const ext = file.name.split('.').pop()?.toLowerCase() || '';
+        return {
+          title: file.name.replace(/\.[^/.]+$/, ""),
+          course: data.course,
+          professor: data.professor,
+          fileName: file.name,
+          fileType: typeMapping[ext] || 'other' as Document['fileType'],
+          uploadedAt: new Date().toISOString(),
+        };
+      });
+
+      await api.addDocumentsToFolder(newFolder.id, docs);
+      newFolder.documentCount = docs.length;
+    }
+
+    setFolders(prev => [newFolder, ...prev]);
+    return newFolder;
+  }, []);
+
+  const deleteFolder = useCallback(async (folderId: string) => {
+    await api.deleteFolder(folderId);
+    setFolders(prev => prev.filter(f => f.id !== folderId));
+  }, []);
+
+  return { folders, loading, createFolder, deleteFolder, refresh };
+};
+
+export const useFolder = (folderId: string) => {
+  const [folder, setFolder] = useState<Folder | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchFolder = async () => {
+      try {
+        const data = await api.getFolder(folderId);
+        setFolder(data);
+      } catch (error) {
+        console.error('Failed to fetch folder:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (folderId) {
+      fetchFolder();
+    }
+  }, [folderId]);
+
+  return { folder, loading };
+};
+
+export const useFolderDocuments = (folderId: string) => {
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const refresh = useCallback(async () => {
+    try {
+      const data = await api.getFolderDocuments(folderId);
+      setDocuments(data);
+    } catch (error) {
+      console.error('Failed to fetch folder documents:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [folderId]);
+
+  useEffect(() => {
+    if (folderId) {
+      refresh();
+    }
+  }, [folderId, refresh]);
+
+  const trackDownload = useCallback(async (documentId: string) => {
+    await api.incrementDownload(documentId);
+    refresh();
+  }, [refresh]);
+
+  return { documents, loading, trackDownload, refresh };
 };

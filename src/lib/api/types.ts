@@ -10,6 +10,17 @@ export interface Document {
   fileName: string;
   uploadedAt: string;
   downloads: number;
+  folderId?: string; // Optional folder association
+}
+
+export interface Folder {
+  id: string;
+  name: string;
+  description: string;
+  course: string;
+  professor: string;
+  createdAt: string;
+  documentCount: number;
 }
 
 export interface DownloadEvent {
@@ -47,6 +58,14 @@ export interface DatabaseAPI {
   getDocuments(): Promise<Document[]>;
   addDocument(doc: Omit<Document, 'id' | 'downloads'>): Promise<Document>;
   incrementDownload(documentId: string): Promise<void>;
+  
+  // Folders
+  getFolders(): Promise<Folder[]>;
+  getFolder(folderId: string): Promise<Folder | null>;
+  addFolder(folder: Omit<Folder, 'id' | 'documentCount' | 'createdAt'>): Promise<Folder>;
+  deleteFolder(folderId: string): Promise<void>;
+  getFolderDocuments(folderId: string): Promise<Document[]>;
+  addDocumentsToFolder(folderId: string, documents: Omit<Document, 'id' | 'downloads' | 'folderId'>[]): Promise<Document[]>;
   
   // Comments
   getComments(documentId?: string): Promise<Comment[]>;

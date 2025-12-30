@@ -1,11 +1,12 @@
 // localStorage implementation of the Database API
 // This can be swapped for Oracle REST API by implementing the same interface
 
-import { Document, DownloadEvent, Comment, TimeRange, Analytics, DatabaseAPI } from './types';
+import { Document, DownloadEvent, Comment, TimeRange, Analytics, DatabaseAPI, Folder } from './types';
 
 const DOCUMENTS_KEY = 'dtd_documents';
 const DOWNLOADS_KEY = 'dtd_downloads';
 const COMMENTS_KEY = 'dtd_comments';
+const FOLDERS_KEY = 'dtd_folders';
 
 // Helper to safely parse JSON from localStorage
 const safeGetItem = <T>(key: string, defaultValue: T): T => {
@@ -334,5 +335,75 @@ export const localStorageAPI: DatabaseAPI = {
       recentActivity: getRecentActivity(documents, downloads),
       timeRange,
     };
+  },
+
+  // ==================
+  // FOLDERS
+  // ==================
+
+  async getFolders(): Promise<Folder[]> {
+    return safeGetItem<Folder[]>(FOLDERS_KEY, []);
+  },
+
+  async getFolder(folderId: string): Promise<Folder | null> {
+    const folders = safeGetItem<Folder[]>(FOLDERS_KEY, []);
+    return folders.find(f => f.id === folderId) || null;
+  },
+
+  async addFolder(folder: Omit<Folder, 'id' | 'documentCount' | 'createdAt'>): Promise<Folder> {
+    const folders = safeGetItem<Folder[]>(FOLDERS_KEY, []);
+    const newFolder: Folder = {
+      ...folder,
+      id: crypto.randomUUID(),
+      documentCount: 0,
+      createdAt: new Date().toISOString(),
+    };
+    folders.unshift(newFolder);
+    safeSetItem(FOLDERS_KEY, folders);
+    return newFolder;
+  },
+
+  async deleteFolder(folderId: string): Promise<void> {
+    const folders = safeGetItem<Folder[]>(FOLDERS_KEY, []);
+    const filtered = folders.filter(f => f.id !== folderId);
+    safeSetItem(FOLDERS_KEY, filtered);
+    
+    // Also remove documents in this folder
+    const documents = safeGetItem<Document[]>(DOCUMENTS_KEY, []);
+    const filteredDocs = documents.filter(d => d.folderId !== folderId);
+    safeSetItem(DOCUMENTS_KEY, filteredDocs);
+  },
+
+  async getFolderDocuments(folderId: string): Promise<Document[]> {
+    const documents = safeGetItem<Document[]>(DOCUMENTS_KEY, []);
+    return documents.filter(d => d.folderId === folderId);
+  },
+
+  async addDocumentsToFolder(
+    folderId: string,
+    docs: Omit<Document, 'id' | 'downloads' | 'folderId'>[]
+  ): Promise<Document[]> {
+    const documents = safeGetItem<Document[]>(DOCUMENTS_KEY, []);
+    const folders = safeGetItem<Folder[]>(FOLDERS_KEY, []);
+    
+    const newDocs: Document[] = docs.map(doc => ({
+      ...doc,
+      id: crypto.randomUUID(),
+      downloads: 0,
+      folderId,
+    }));
+    
+    // Add documents
+    documents.unshift(...newDocs);
+    safeSetItem(DOCUMENTS_KEY, documents);
+    
+    // Update folder document count
+    const folder = folders.find(f => f.id === folderId);
+    if (folder) {
+      folder.documentCount += newDocs.length;
+      safeSetItem(FOLDERS_KEY, folders);
+    }
+    
+    return newDocs;
   },
 };
