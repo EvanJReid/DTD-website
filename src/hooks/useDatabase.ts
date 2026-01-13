@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { api, STORAGE_KEYS, Document, Comment, TimeRange, Analytics, Folder } from '@/lib/api';
+import { api, STORAGE_KEYS, Document, Comment, TimeRange, Analytics, Folder, Coop } from '@/lib/api';
 
 export const useDocuments = () => {
   const [documents, setDocuments] = useState<Document[]>([]);
@@ -298,4 +298,68 @@ export const useFolderDocuments = (folderId: string) => {
   }, [refresh]);
 
   return { documents, loading, trackDownload, refresh };
+};
+
+// ==================
+// CO-OP HOOKS
+// ==================
+
+export const useCoops = () => {
+  const [coops, setCoops] = useState<Coop[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const refresh = useCallback(async () => {
+    try {
+      const data = await api.getCoops();
+      setCoops(data);
+    } catch (error) {
+      console.error('Failed to fetch co-ops:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    refresh();
+    
+    const handleLocalUpdate = () => refresh();
+    window.addEventListener('localStorageUpdate', handleLocalUpdate);
+    
+    return () => {
+      window.removeEventListener('localStorageUpdate', handleLocalUpdate);
+    };
+  }, [refresh]);
+
+  const addCoop = useCallback(async (data: Omit<Coop, 'id' | 'createdAt'>) => {
+    const newCoop = await api.addCoop(data);
+    setCoops(prev => [newCoop, ...prev]);
+    return newCoop;
+  }, []);
+
+  const updateCoop = useCallback(async (coopId: string, updates: Partial<Omit<Coop, 'id' | 'createdAt'>>) => {
+    const updated = await api.updateCoop(coopId, updates);
+    setCoops(prev => prev.map(c => c.id === coopId ? updated : c));
+    return updated;
+  }, []);
+
+  const deleteCoop = useCallback(async (coopId: string) => {
+    await api.deleteCoop(coopId);
+    setCoops(prev => prev.filter(c => c.id !== coopId));
+  }, []);
+
+  // Group co-ops by company and sort by count (descending)
+  const coopsByCompany = coops.reduce((acc, coop) => {
+    const key = coop.company;
+    if (!acc[key]) {
+      acc[key] = [];
+    }
+    acc[key].push(coop);
+    return acc;
+  }, {} as Record<string, Coop[]>);
+
+  const sortedCompanies = Object.entries(coopsByCompany)
+    .sort(([, a], [, b]) => b.length - a.length)
+    .map(([company, coops]) => ({ company, coops, count: coops.length }));
+
+  return { coops, coopsByCompany: sortedCompanies, loading, addCoop, updateCoop, deleteCoop, refresh };
 };

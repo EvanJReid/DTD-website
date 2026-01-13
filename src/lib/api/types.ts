@@ -28,6 +28,17 @@ export interface DownloadEvent {
   timestamp: string;
 }
 
+export interface Coop {
+  id: string;
+  brotherName: string;
+  company: string;
+  position: string;
+  semester: string; // e.g., "Fall 2024", "Spring 2025"
+  status: 'current' | 'past';
+  notes?: string;
+  createdAt: string;
+}
+
 export interface Comment {
   id: string;
   documentId: string;
@@ -77,4 +88,10 @@ export interface DatabaseAPI {
   
   // Download events (for analytics)
   getDownloadEvents(): Promise<DownloadEvent[]>;
+
+  // Co-ops
+  getCoops(): Promise<Coop[]>;
+  addCoop(coop: Omit<Coop, 'id' | 'createdAt'>): Promise<Coop>;
+  updateCoop(coopId: string, updates: Partial<Omit<Coop, 'id' | 'createdAt'>>): Promise<Coop>;
+  deleteCoop(coopId: string): Promise<void>;
 }

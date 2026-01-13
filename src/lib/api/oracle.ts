@@ -8,7 +8,7 @@
 // 3. Create REST modules with the endpoints below
 // 4. Update ORACLE_APEX_BASE_URL with your APEX instance URL
 
-import { DatabaseAPI, Document, Comment, Analytics, DownloadEvent, TimeRange, Folder } from './types';
+import { DatabaseAPI, Document, Comment, Analytics, DownloadEvent, TimeRange, Folder, Coop } from './types';
 
 // TODO: Replace with your Oracle APEX REST base URL
 // Example: https://abc123-mydb.adb.us-ashburn-1.oraclecloudapps.com/ords/myworkspace/api
@@ -318,5 +318,81 @@ export const oracleAPI: DatabaseAPI = {
       downloads: 0,
       folderId,
     }));
+  },
+
+  // ==================
+  // CO-OPS
+  // ==================
+
+  async getCoops(): Promise<Coop[]> {
+    const data = await apexFetch<{ items: any[] }>('/coops');
+    return data.items.map(coop => ({
+      id: String(coop.id),
+      brotherName: coop.brother_name,
+      company: coop.company,
+      position: coop.position,
+      semester: coop.semester,
+      status: coop.status as 'current' | 'past',
+      notes: coop.notes || undefined,
+      createdAt: toISODate(coop.created_at),
+    }));
+  },
+
+  async addCoop(coop: Omit<Coop, 'id' | 'createdAt'>): Promise<Coop> {
+    const result = await apexFetch<any>('/coops', {
+      method: 'POST',
+      body: JSON.stringify({
+        brother_name: coop.brotherName,
+        company: coop.company,
+        position: coop.position,
+        semester: coop.semester,
+        status: coop.status,
+        notes: coop.notes,
+        created_at: new Date().toISOString(),
+      }),
+    });
+
+    return {
+      id: String(result.id),
+      brotherName: result.brother_name,
+      company: result.company,
+      position: result.position,
+      semester: result.semester,
+      status: result.status,
+      notes: result.notes || undefined,
+      createdAt: toISODate(result.created_at),
+    };
+  },
+
+  async updateCoop(coopId: string, updates: Partial<Omit<Coop, 'id' | 'createdAt'>>): Promise<Coop> {
+    const payload: any = {};
+    if (updates.brotherName !== undefined) payload.brother_name = updates.brotherName;
+    if (updates.company !== undefined) payload.company = updates.company;
+    if (updates.position !== undefined) payload.position = updates.position;
+    if (updates.semester !== undefined) payload.semester = updates.semester;
+    if (updates.status !== undefined) payload.status = updates.status;
+    if (updates.notes !== undefined) payload.notes = updates.notes;
+
+    const result = await apexFetch<any>(`/coops/${coopId}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+
+    return {
+      id: String(result.id),
+      brotherName: result.brother_name,
+      company: result.company,
+      position: result.position,
+      semester: result.semester,
+      status: result.status,
+      notes: result.notes || undefined,
+      createdAt: toISODate(result.created_at),
+    };
+  },
+
+  async deleteCoop(coopId: string): Promise<void> {
+    await apexFetch(`/coops/${coopId}`, {
+      method: 'DELETE',
+    });
   },
 };
