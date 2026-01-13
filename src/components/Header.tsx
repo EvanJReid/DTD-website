@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { GraduationCap, Upload, BarChart3, FolderPlus, Briefcase } from "lucide-react";
 import { Button } from "./ui/button";
+import { ThemeToggle } from "./ThemeToggle";
 
 interface HeaderProps {
   onUploadClick: () => void;
@@ -40,6 +41,7 @@ export function Header({ onUploadClick, onFolderClick }: HeaderProps) {
           </nav>
 
           <div className="flex items-center gap-2">
+            <ThemeToggle />
             <Link to="/dashboard">
               <Button variant="ghost" size="sm" className="hidden sm:flex">
                 <BarChart3 className="h-4 w-4" />
