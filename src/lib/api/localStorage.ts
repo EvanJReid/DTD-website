@@ -1,12 +1,13 @@
 // localStorage implementation of the Database API
 // This can be swapped for Oracle REST API by implementing the same interface
 
-import { Document, DownloadEvent, Comment, TimeRange, Analytics, DatabaseAPI, Folder } from './types';
+import { Document, DownloadEvent, Comment, TimeRange, Analytics, DatabaseAPI, Folder, Coop } from './types';
 
 const DOCUMENTS_KEY = 'dtd_documents';
 const DOWNLOADS_KEY = 'dtd_downloads';
 const COMMENTS_KEY = 'dtd_comments';
 const FOLDERS_KEY = 'dtd_folders';
+const COOPS_KEY = 'dtd_coops';
 
 // Helper to safely parse JSON from localStorage
 const safeGetItem = <T>(key: string, defaultValue: T): T => {
@@ -405,5 +406,41 @@ export const localStorageAPI: DatabaseAPI = {
     }
     
     return newDocs;
+  },
+
+  // ==================
+  // CO-OPS
+  // ==================
+
+  async getCoops(): Promise<Coop[]> {
+    return safeGetItem<Coop[]>(COOPS_KEY, []);
+  },
+
+  async addCoop(coop: Omit<Coop, 'id' | 'createdAt'>): Promise<Coop> {
+    const coops = safeGetItem<Coop[]>(COOPS_KEY, []);
+    const newCoop: Coop = {
+      ...coop,
+      id: crypto.randomUUID(),
+      createdAt: new Date().toISOString(),
+    };
+    coops.unshift(newCoop);
+    safeSetItem(COOPS_KEY, coops);
+    return newCoop;
+  },
+
+  async updateCoop(coopId: string, updates: Partial<Omit<Coop, 'id' | 'createdAt'>>): Promise<Coop> {
+    const coops = safeGetItem<Coop[]>(COOPS_KEY, []);
+    const index = coops.findIndex(c => c.id === coopId);
+    if (index === -1) throw new Error('Co-op not found');
+    
+    coops[index] = { ...coops[index], ...updates };
+    safeSetItem(COOPS_KEY, coops);
+    return coops[index];
+  },
+
+  async deleteCoop(coopId: string): Promise<void> {
+    const coops = safeGetItem<Coop[]>(COOPS_KEY, []);
+    const filtered = coops.filter(c => c.id !== coopId);
+    safeSetItem(COOPS_KEY, filtered);
   },
 };

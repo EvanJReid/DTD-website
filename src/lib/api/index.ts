@@ -24,4 +24,5 @@ export const STORAGE_KEYS = {
   downloads: 'dtd_downloads', 
   comments: 'dtd_comments',
   folders: 'dtd_folders',
+  coops: 'dtd_coops',
 } as const;

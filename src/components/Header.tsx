@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { GraduationCap, Upload, BarChart3, FolderPlus } from "lucide-react";
+import { GraduationCap, Upload, BarChart3, FolderPlus, Briefcase } from "lucide-react";
 import { Button } from "./ui/button";
 
 interface HeaderProps {
@@ -28,6 +28,10 @@ export function Header({ onUploadClick, onFolderClick }: HeaderProps) {
             </Link>
             <Link to="/courses" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
               Courses
+            </Link>
+            <Link to="/coops" className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5">
+              <Briefcase className="h-4 w-4" />
+              Co-ops
             </Link>
             <Link to="/dashboard" className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5">
               <BarChart3 className="h-4 w-4" />
