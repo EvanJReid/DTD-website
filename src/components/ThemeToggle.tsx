@@ -1,6 +1,6 @@
 import { Moon, Sun } from "lucide-react";
-import { Button } from "./ui/button";
 import { useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
 
 export function ThemeToggle() {
   const [isDark, setIsDark] = useState(() => {
@@ -21,7 +21,6 @@ export function ThemeToggle() {
     }
   }, [isDark]);
 
-  // Initialize from localStorage or system preference
   useEffect(() => {
     const stored = localStorage.getItem("theme");
     if (stored === "dark") {
@@ -34,18 +33,34 @@ export function ThemeToggle() {
   }, []);
 
   return (
-    <Button
-      variant="ghost"
-      size="icon"
+    <button
       onClick={() => setIsDark(!isDark)}
-      className="h-9 w-9"
+      className={cn(
+        "relative h-8 w-14 rounded-full p-1 transition-colors duration-300",
+        "bg-muted hover:bg-muted/80",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+      )}
       aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
     >
-      {isDark ? (
-        <Sun className="h-4 w-4 transition-transform" />
-      ) : (
-        <Moon className="h-4 w-4 transition-transform" />
-      )}
-    </Button>
+      <span
+        className={cn(
+          "flex h-6 w-6 items-center justify-center rounded-full bg-background shadow-sm transition-all duration-300",
+          isDark ? "translate-x-6" : "translate-x-0"
+        )}
+      >
+        <Sun
+          className={cn(
+            "absolute h-3.5 w-3.5 text-amber-500 transition-all duration-300",
+            isDark ? "scale-100 rotate-0 opacity-100" : "scale-0 rotate-90 opacity-0"
+          )}
+        />
+        <Moon
+          className={cn(
+            "absolute h-3.5 w-3.5 text-slate-700 dark:text-slate-400 transition-all duration-300",
+            isDark ? "scale-0 -rotate-90 opacity-0" : "scale-100 rotate-0 opacity-100"
+          )}
+        />
+      </span>
+    </button>
   );
 }
