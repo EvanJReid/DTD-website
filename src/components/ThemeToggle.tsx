@@ -33,23 +33,24 @@ export function ThemeToggle() {
 
   return (
     <button
+      role="switch"
+      aria-checked={isDark}
       onClick={() => setIsDark(!isDark)}
       className={cn(
-        "relative flex h-7 w-[52px] items-center rounded-full border border-border bg-muted p-0.5 transition-colors",
-        "hover:border-border/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        "relative h-[22px] w-[40px] cursor-pointer rounded-full transition-colors duration-200 ease-in-out",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+        isDark 
+          ? "bg-primary" 
+          : "bg-muted-foreground/30"
       )}
       aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
     >
       <span
         className={cn(
-          "absolute h-6 w-6 rounded-full bg-background shadow-sm transition-transform duration-200 ease-out",
-          isDark ? "translate-x-[24px]" : "translate-x-0"
+          "pointer-events-none absolute top-[2px] left-[2px] h-[18px] w-[18px] rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out",
+          isDark ? "translate-x-[18px]" : "translate-x-0"
         )}
       />
-      <span className="relative z-10 flex w-full justify-between px-1.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-        <span className={cn(isDark && "opacity-50")}>Lt</span>
-        <span className={cn(!isDark && "opacity-50")}>Dk</span>
-      </span>
     </button>
   );
 }
