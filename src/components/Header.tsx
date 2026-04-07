@@ -46,7 +46,7 @@ export function Header({ onUploadClick, onFolderClick }: HeaderProps) {
                 <Trophy className="h-4 w-4" />
                 Leaderboard
               </Link>
-              <Link to="/coop" className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5">
+              <Link to="/coops" className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5">
                 <Briefcase className="h-4 w-4" />
                 Co-ops
               </Link>

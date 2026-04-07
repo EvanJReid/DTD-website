@@ -68,9 +68,9 @@ export interface CoopEntry {
   brotherName: string;
   company: string;
   position: string;
-  location: string;
-  term: 'Spring' | 'Summer' | 'Fall';
-  year: number;
+  semester: string;   // e.g. "Fall 2024"
+  status: 'current' | 'past';
+  location?: string;
   notes?: string;
   addedBy?: string;
   addedAt: string;

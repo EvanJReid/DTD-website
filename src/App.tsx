@@ -35,7 +35,7 @@ const App = () => (
               <Route path="/profile" element={<Profile />} />
               <Route path="/course/:courseCode" element={<CourseView />} />
               <Route path="/professor/:name" element={<ProfessorView />} />
-              <Route path="/coop" element={<Coop />} />
+              <Route path="/coops" element={<Coop />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

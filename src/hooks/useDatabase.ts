@@ -400,5 +400,16 @@ export function useCoops() {
     setCoops(updated);
   }, []);
 
-  return { coops, addCoop, updateCoop, deleteCoop };
+  // Group by company, sorted by count desc
+  const coopsByCompany = coops.reduce((acc, c) => {
+    if (!acc[c.company]) acc[c.company] = [];
+    acc[c.company].push(c);
+    return acc;
+  }, {} as Record<string, CoopEntry[]>);
+
+  const sortedCompanies = Object.entries(coopsByCompany)
+    .sort(([, a], [, b]) => b.length - a.length)
+    .map(([company, entries]) => ({ company, coops: entries, count: entries.length }));
+
+  return { coops, coopsByCompany: sortedCompanies, addCoop, updateCoop, deleteCoop };
 }
